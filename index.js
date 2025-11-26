@@ -41,14 +41,20 @@ async function run() {
       const result = await eventsCollection.insertOne(data);
       res.send(result);
     });
-      app.get("/events/:id", async (req, res) => {
-      const { id } = req.params;
-      const query = { _id: new ObjectId(id) };
-      const result = await eventsCollection.findOne(query);
-
-      console.log(id);
+        app.get("/events/:id", async (req, res) => {
+        const { id } = req.params;
+        const query = { _id: new ObjectId(id) };
+        const result = await eventsCollection.findOne(query);
+        console.log(id);
+        res.send(result);
+      })
+      app.post("/add-event", async (req, res) => {
+      const data = req.body;
+      // console.log(data);
+      //code deploy korar jonno test
+      const result = await eventsCollection.insertOne(data);
       res.send(result);
-    })
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
