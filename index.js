@@ -7,8 +7,7 @@ const cors = require("cors");
 app.use(cors()); // <-- allow all origins
 app.use(express.json());
 
-const uri =
-  `mongodb+srv://eventManagmentDB:xIdzsptJ8saQFCsZ@cluster0.iesbwy6.mongodb.net/?appName=Cluster0`;
+const uri = `mongodb+srv://eventManagmentDB:xIdzsptJ8saQFCsZ@cluster0.iesbwy6.mongodb.net/?appName=Cluster0`;
 // const uri =process.env.MONGO_URI
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -30,6 +29,7 @@ async function run() {
     await client.connect();
     const db = client.db("eventManagmentDB");
     const eventsCollection = db.collection("events");
+    const bookEventsCollection = db.collection("my-bookedEvent");
     app.get("/events", async (req, res) => {
       const result = await eventsCollection.find().toArray();
       res.send(result);
@@ -41,18 +41,78 @@ async function run() {
       const result = await eventsCollection.insertOne(data);
       res.send(result);
     });
-        app.get("/events/:id", async (req, res) => {
-        const { id } = req.params;
-        const query = { _id: new ObjectId(id) };
-        const result = await eventsCollection.findOne(query);
-        console.log(id);
-        res.send(result);
-      })
-      app.post("/add-event", async (req, res) => {
+    app.get("/events/:id", async (req, res) => {
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) };
+      const result = await eventsCollection.findOne(query);
+      console.log(id);
+      res.send(result);
+    });
+    app.post("/add-event", async (req, res) => {
       const data = req.body;
       // console.log(data);
       //code deploy korar jonno test
       const result = await eventsCollection.insertOne(data);
+      res.send(result);
+    });
+    app.post("/my-bookedEvent", async (req, res) => {
+      const data = req.body;
+      // console.log(data);
+      //code deploy korar jonno test
+      const result = await bookEventsCollection.insertOne(data);
+      res.send(result);
+    });
+    app.get("/my-bookedEvent", async (req, res) => {
+      const result = await bookEventsCollection.find().toArray();
+      res.send(result);
+    });
+    // DELETE /courses/:id
+    app.delete("/my-bookedEvent/:id", async (req, res) => {
+      const eventId = req.params.id;
+      console.log("🔍 Trying to delete:", eventId);
+
+      try {
+        // প্রথমে ObjectId দিয়ে try করুন
+        let result = await bookEventsCollection.deleteOne({
+          _id: new ObjectId(eventId),
+        });
+        
+        console.log("📊 Result with ObjectId:", result);
+
+        // যদি না পায়, তাহলে string দিয়ে try করুন
+        if (result.deletedCount === 0) {
+          result = await bookEventsCollection.deleteOne({
+            _id: eventId, // without ObjectId conversion
+          });
+          console.log("📊 Result with string:", result);
+        }
+
+        if (result.deletedCount === 1) {
+          res.status(200).json({ message: "Event deleted successfully" });
+        } else {
+          // সব documents দেখুন
+          const allDocs = await bookEventsCollection.find().toArray();
+          console.log("📄 All documents in collection:", allDocs);
+          res.status(404).json({ message: "Event not found" });
+        }
+      } catch (error) {
+        console.error("❌ Error:", error);
+        res.status(500).json({
+          message: "Internal server error",
+          error: error.message,
+        });
+      }
+    });
+    // 🟣 Update Course (only if email matches)
+    app.put("/my-bookedEvent/:id", async (req, res) => {
+      const { id } = req.params;
+      const data = req.body;
+      const query = { _id: new ObjectId(id) };
+      const update = {
+        $set: data,
+      };
+      const result = bookEventsCollection.updateOne(query, update);
+
       res.send(result);
     });
 
